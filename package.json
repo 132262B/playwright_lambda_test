@@ -1,0 +1,31 @@
+{
+  "name": "serverless-js-app",
+  "version": "1.0.0",
+  "description": "Serverless Framework JavaScript application",
+  "main": "handler.js",
+  "scripts": {
+    "start": "node handler.js",
+    "dev": "serverless offline",
+    "deploy": "serverless deploy",
+    "remove": "serverless remove",
+    "logs": "serverless logs -f hello",
+    "test": "npx playwright test",
+    "test:ui": "npx playwright test --ui",
+    "test:headed": "npx playwright test --headed"
+  },
+  "keywords": [
+    "serverless",
+    "aws",
+    "lambda",
+    "javascript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@playwright/test": "^1.54.2",
+    "serverless": "^4.18.0"
+  },
+  "devDependencies": {
+    "serverless-offline": "^13.3.0"
+  }
+}
