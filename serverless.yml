@@ -18,16 +18,20 @@ functions:
       - httpApi:
           path: /
           method: get
-    timeout: 60
-    memorySize: 1024
+    timeout: 900
+    memorySize: 3008
+    environment:
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
   runOffercentTest:
     image: playwright-image
     events:
       - httpApi:
           path: /test
           method: get
-    timeout: 60
-    memorySize: 1024
+    timeout: 900
+    memorySize: 3008
+    environment:
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
 
 plugins:
   - serverless-offline
