@@ -1,0 +1,42 @@
+FROM ubuntu:22.04
+
+# Install dependencies for WebKit
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    gnupg \
+    ca-certificates \
+    fonts-liberation \
+    libappindicator3-1 \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libdrm2 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    xdg-utils \
+    libxss1 \
+    libgconf-2-4 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 18
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY index.js ./
+COPY offercent-login.test.js ./
+
+# Install WebKit browser specifically
+RUN npx playwright install webkit
+RUN npx playwright install-deps webkit
+
+CMD ["node", "index.js"]
