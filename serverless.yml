@@ -6,13 +6,16 @@ provider:
   name: aws
   region: ap-northeast-2
   stage: dev
+  architecture: x86_64
   ecr:
     images:
       playwright-image:
         path: ./
+        file: Dockerfile.chromium
+        platform: linux/amd64
 
 functions:
-  hello:
+  runTest:
     image: playwright-image
     events:
       - httpApi:

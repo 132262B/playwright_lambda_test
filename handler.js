@@ -4,27 +4,7 @@ const path = require('path');
 
 const execAsync = promisify(exec);
 
-exports.hello = async (event) => {
-  console.log('Event:', JSON.stringify(event, null, 2));
-  
-  const response = {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      message: 'Hello from Serverless!',
-      timestamp: new Date().toISOString(),
-      requestId: event.requestContext?.requestId || 'local',
-      path: event.path || '/',
-      httpMethod: event.httpMethod || event.requestContext?.http?.method || 'GET'
-    }),
-  };
-
-  return response;
-};
-
-exports.runOffercentTest = async (event) => {
+exports.runTest = async (event) => {
   console.log('Starting offercent-login.test execution...');
   
   try {
