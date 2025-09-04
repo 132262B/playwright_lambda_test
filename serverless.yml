@@ -6,13 +6,13 @@ provider:
   name: aws
   region: ap-northeast-2
   stage: dev
-  architecture: x86_64
+  architecture: arm64
   ecr:
     images:
       playwright-image:
         path: ./
-        file: Dockerfile.chromium
-        platform: linux/amd64
+        file: Dockerfile.chrominum2
+        platform: linux/arm64
 
 functions:
   runTest:
@@ -24,17 +24,20 @@ functions:
     timeout: 900
     memorySize: 3008
     environment:
-      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
-  runOffercentTest:
+      HOME: /tmp
+      XDG_CONFIG_HOME: /tmp
+      XDG_CACHE_HOME: /tmp
+      XDG_DATA_HOME: /tmp
+      XDG_STATE_HOME: /tmp
+      PLAYWRIGHT_BROWSERS_PATH: /tmp
+  version:
     image: playwright-image
     events:
       - httpApi:
-          path: /test
+          path: /version
           method: get
-    timeout: 900
-    memorySize: 3008
-    environment:
-      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+    timeout: 60
+    memorySize: 1000
 
 plugins:
   - serverless-offline
