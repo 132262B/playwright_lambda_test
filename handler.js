@@ -2,21 +2,77 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-// Set Playwright browser path for Lambda environment
-if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
-  process.env.PLAYWRIGHT_BROWSERS_PATH = '/opt/ms-playwright';
+// Lambda 환경에서 Playwright 브라우저 설정
+function setupPlaywrightEnvironment() {
+  if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    // Lambda 환경 설정
+    process.env.PLAYWRIGHT_BROWSERS_PATH = '/opt/ms-playwright';
+    process.env.HOME = '/tmp';
+    process.env.XDG_CONFIG_HOME = '/tmp';
+    process.env.XDG_CACHE_HOME = '/tmp';
+    process.env.XDG_DATA_HOME = '/tmp';
+    process.env.XDG_STATE_HOME = '/tmp';
+    process.env.FONTCONFIG_PATH = '/tmp';
+    
+    // 브라우저 실행 파일 경로 확인 및 설정
+    try {
+      if (fs.existsSync('/opt/ms-playwright')) {
+        const items = fs.readdirSync('/opt/ms-playwright');
+        const chromiumDirs = items.filter(d => d.startsWith('chromium-'));
+        
+        if (chromiumDirs.length > 0) {
+          const chromiumPath = `/opt/ms-playwright/${chromiumDirs[0]}/chrome-linux/chrome`;
+          if (fs.existsSync(chromiumPath)) {
+            process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH = chromiumPath;
+            console.log('Chromium executable found:', chromiumPath);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Could not locate chromium executable:', error.message);
+    }
+  }
 }
 
 exports.runTest = async (event) => {
   console.log('Starting offercent-login.test execution...');
-  console.log('PLAYWRIGHT_BROWSERS_PATH:', process.env.PLAYWRIGHT_BROWSERS_PATH);
   
-  // Debug: List browser directories
+  // Playwright 환경 설정
+  setupPlaywrightEnvironment();
+  
+  // Lambda 환경에서 필요한 디렉터리 생성
+  if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    try {
+      if (!fs.existsSync('/tmp/test-results')) {
+        fs.mkdirSync('/tmp/test-results', { recursive: true });
+      }
+    } catch (error) {
+      console.warn('Could not create test-results directory:', error.message);
+    }
+  }
+  
+  console.log('Environment variables:');
+  console.log('PLAYWRIGHT_BROWSERS_PATH:', process.env.PLAYWRIGHT_BROWSERS_PATH);
+  console.log('PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH:', process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH);
+  console.log('HOME:', process.env.HOME);
+  
+  // Debug: 브라우저 디렉터리 내용 확인
   if (fs.existsSync('/opt/ms-playwright')) {
     console.log('/opt/ms-playwright contents:', fs.readdirSync('/opt/ms-playwright'));
-  }
-  if (fs.existsSync('/tmp/.cache/ms-playwright')) {
-    console.log('/tmp/.cache/ms-playwright contents:', fs.readdirSync('/tmp/.cache/ms-playwright'));
+    
+    // chromium 디렉터리 확인
+    const chromiumDirs = fs.readdirSync('/opt/ms-playwright').filter(d => d.startsWith('chromium-'));
+    if (chromiumDirs.length > 0) {
+      const chromiumPath = `/opt/ms-playwright/${chromiumDirs[0]}`;
+      if (fs.existsSync(chromiumPath)) {
+        console.log(`${chromiumPath} contents:`, fs.readdirSync(chromiumPath));
+        
+        const chromeLinuxPath = `${chromiumPath}/chrome-linux`;
+        if (fs.existsSync(chromeLinuxPath)) {
+          console.log(`${chromeLinuxPath} contents:`, fs.readdirSync(chromeLinuxPath));
+        }
+      }
+    }
   }
 
   return new Promise((resolve) => {

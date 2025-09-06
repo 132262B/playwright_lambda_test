@@ -57,6 +57,7 @@ ENV HOME=/tmp \
 # Copy application code
 COPY handler.js ${LAMBDA_TASK_ROOT}/
 COPY offercent-login.test.js ${LAMBDA_TASK_ROOT}/
+COPY playwright.config.js ${LAMBDA_TASK_ROOT}/
 
 # Set the Lambda handler
 CMD ["handler.runTest"]
