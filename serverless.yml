@@ -11,7 +11,7 @@ provider:
     images:
       playwright-image:
         path: ./
-        file: Dockerfile.chrominum2
+        file: Dockerfile.chrominum3
         platform: linux/arm64
 
 functions:

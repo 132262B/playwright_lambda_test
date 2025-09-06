@@ -23,6 +23,7 @@
   "license": "MIT",
   "dependencies": {
     "@playwright/test": "^1.54.2",
+    "playwright": "^1.54.2",
     "serverless": "^4.18.1"
   },
   "devDependencies": {
