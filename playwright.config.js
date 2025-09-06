@@ -10,7 +10,6 @@ module.exports = defineConfig({
   use: {
     headless: true,
     ignoreHTTPSErrors: true,
-    storageState: '/tmp/storage-state.json',
     launchOptions: {
       executablePath: chromium.executablePath(), // 번들 Chromium 강제
       args: [
@@ -19,7 +18,6 @@ module.exports = defineConfig({
         '--disable-dev-shm-usage',
         '--password-store=basic',
         '--use-mock-keychain',
-        '--user-data-dir=/tmp/chrome',
         '--disable-web-security',
         '--ignore-certificate-errors',
         '--ignore-ssl-errors',

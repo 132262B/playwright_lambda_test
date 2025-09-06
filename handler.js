@@ -1,4 +1,4 @@
-const { chromium } = require('playwright');
+const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -19,109 +19,62 @@ exports.runTest = async (event) => {
     console.log('/tmp/.cache/ms-playwright contents:', fs.readdirSync('/tmp/.cache/ms-playwright'));
   }
 
-  try {
-    // Find Chromium executable path in Lambda environment
-    let executablePath;
-    if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
-      // Lambda environment - use /opt path
-      executablePath = '/opt/ms-playwright/chromium-1187/chrome-linux/chrome';
-    }
-
-    // Playwright API를 직접 사용 - Lambda 최적화된 설정
-    const browser = await chromium.launch({
-      headless: true,
-      executablePath,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-extensions',
-        '--disable-plugins',
-        '--disable-background-timer-throttling',
-        '--disable-renderer-backgrounding',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-default-apps',
-        '--disable-features=TranslateUI',
-        '--disable-ipc-flooding-protection',
-        '--disable-web-security',
-        '--ignore-certificate-errors',
-        '--ignore-ssl-errors',
-        '--disable-gpu',
-        '--no-zygote',
-        '--single-process',
-        '--disable-logging',
-        '--disable-gl-drawing-for-tests',
-        '--password-store=basic',
-        '--use-mock-keychain',
-        '--enable-automation',
-        '--disable-blink-features=AutomationControlled'
-      ],
+  return new Promise((resolve) => {
+    const testProcess = spawn('npx', ['playwright', 'test', 'offercent-login.test.js'], {
+      cwd: process.cwd(),
+      env: process.env,
+      stdio: ['pipe', 'pipe', 'pipe']
     });
 
-    const context = await browser.newContext({
-      ignoreHTTPSErrors: true,
+    let stdout = '';
+    let stderr = '';
+
+    testProcess.stdout.on('data', (data) => {
+      stdout += data.toString();
+      console.log(data.toString());
     });
-    
-    const page = await context.newPage();
 
-    // 테스트 로직 실행
-    await page.goto('https://offercent.co.kr/company-list?jobCategories=0010001');
-    await page.waitForLoadState('networkidle');
+    testProcess.stderr.on('data', (data) => {
+      stderr += data.toString();
+      console.error(data.toString());
+    });
 
-    const loginButton = page.locator('text=로그인').or(
-      page.locator('[data-testid*="login"]')
-    ).or(
-      page.locator('button:has-text("로그인")')
-    ).or(
-      page.locator('a:has-text("로그인")')
-    ).first();
+    testProcess.on('close', (code) => {
+      console.log(`Test process exited with code ${code}`);
+      
+      const success = code === 0;
+      const testPassed = stdout.includes('passed') && !stdout.includes('failed');
+      
+      resolve({
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: success ? 'Offercent login test executed successfully' : 'Test execution completed with errors',
+          timestamp: new Date().toISOString(),
+          testResults: {
+            exitCode: code,
+            stdout: stdout,
+            stderr: stderr,
+            passed: testPassed,
+            failed: !testPassed,
+          },
+          success: success,
+        }),
+      });
+    });
 
-    await loginButton.waitFor({ state: 'visible' });
-    await loginButton.click();
-    await page.waitForTimeout(1000);
-
-    const growthText = page.locator('text=성장하는 기업들의 채용 소식');
-    await growthText.waitFor({ state: 'visible' });
-
-    const kakaoLoginButton = page.locator('text=카카오 로그인').or(
-      page.locator('button:has-text("카카오 로그인")')
-    ).or(
-      page.locator('[data-testid*="kakao"]')
-    ).or(
-      page.locator('button:has-text("카카오")')
-    );
-    
-    await kakaoLoginButton.waitFor({ state: 'visible' });
-
-    await context.close();
-    await browser.close();
-
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: 'Offercent login test executed successfully',
-        timestamp: new Date().toISOString(),
-        testResults: {
-          output: '✅ 로그인 모달창에서 모든 요소가 정상적으로 확인되었습니다.',
-          passed: true,
-          failed: false,
-        },
-        success: true,
-      }),
-    };
-  } catch (error) {
-    console.error('Test execution failed:', error);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: 'Test execution failed',
-        timestamp: new Date().toISOString(),
-        error: error.message,
-        stack: error.stack,
-        success: false,
-      }),
-    };
-  }
+    testProcess.on('error', (error) => {
+      console.error('Failed to start test process:', error);
+      resolve({
+        statusCode: 500,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: 'Failed to start test process',
+          timestamp: new Date().toISOString(),
+          error: error.message,
+          success: false,
+        }),
+      });
+    });
+  });
 };
