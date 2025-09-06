@@ -30,14 +30,6 @@ functions:
       XDG_DATA_HOME: /tmp
       XDG_STATE_HOME: /tmp
       PLAYWRIGHT_BROWSERS_PATH: /tmp
-  version:
-    image: playwright-image
-    events:
-      - httpApi:
-          path: /version
-          method: get
-    timeout: 60
-    memorySize: 1000
 
 plugins:
   - serverless-offline

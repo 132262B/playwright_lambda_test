@@ -125,16 +125,3 @@ exports.runTest = async (event) => {
     };
   }
 };
-exports.version = async (event) => {
-  return {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      version: 'v2.0.1-playwright-lambda-test',
-      timestamp: new Date().toISOString(),
-      message: 'Playwright Lambda Test Service'
-    }),
-  };
-};
