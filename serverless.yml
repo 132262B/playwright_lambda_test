@@ -21,7 +21,7 @@ functions:
       - httpApi:
           path: /
           method: get
-    timeout: 900
+    timeout: 30
     memorySize: 3008
     environment:
       HOME: /tmp

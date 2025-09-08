@@ -1,42 +1,53 @@
-// playwright.config.js
 const { defineConfig } = require('@playwright/test');
-const path = require('path');
+const fs = require('fs');
 
-// Lambda 환경에서 브라우저 실행 파일 경로 설정
+// Lambda 환경 감지 및 설정
+const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+
+// Lambda 환경 설정
+if (isLambda) {
+  process.env.HOME = '/tmp';
+  process.env.XDG_CONFIG_HOME = '/tmp';
+  process.env.XDG_CACHE_HOME = '/tmp';
+  process.env.XDG_DATA_HOME = '/tmp';
+  process.env.XDG_STATE_HOME = '/tmp';
+  process.env.PLAYWRIGHT_BROWSERS_PATH = '/opt/ms-playwright';
+  process.env.FONTCONFIG_PATH = '/tmp';
+
+  // test-results 디렉터리 생성
+  if (!fs.existsSync('/tmp/test-results')) {
+    fs.mkdirSync('/tmp/test-results', { recursive: true });
+  }
+}
+
+// 브라우저 실행 파일 경로 찾기
 function getExecutablePath() {
-  if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
-    // 환경 변수에서 설정된 경로 사용 (handler.js에서 설정)
-    if (process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH) {
-      return process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
-    }
-    
-    // 대안으로 직접 경로 탐색
-    const fs = require('fs');
+  if (!isLambda) return undefined;
+  
+  try {
     if (fs.existsSync('/opt/ms-playwright')) {
       const items = fs.readdirSync('/opt/ms-playwright');
-      const chromiumDirs = items.filter(d => d.startsWith('chromium-'));
-      
-      if (chromiumDirs.length > 0) {
-        return `/opt/ms-playwright/${chromiumDirs[0]}/chrome-linux/chrome`;
+      const chromiumDir = items.find(d => d.startsWith('chromium-'));
+      if (chromiumDir) {
+        return `/opt/ms-playwright/${chromiumDir}/chrome-linux/chrome`;
       }
     }
+  } catch (error) {
+    console.warn('Browser path detection failed:', error.message);
   }
-  // 로컬 환경에서는 기본 Playwright 브라우저 사용
   return undefined;
 }
 
 module.exports = defineConfig({
   testDir: './',
-  timeout: 60_000, // Lambda 환경에서 더 긴 타임아웃
+  timeout: isLambda ? 60_000 : 30_000,
   workers: 1,
   fullyParallel: false,
-  outputDir: '/tmp/test-results', // Lambda 환경에서 /tmp 디렉터리 사용
-  globalTeardown: undefined,
-  globalSetup: undefined,
-  reporter: [['list']], // 간단한 리포터 사용
+  outputDir: isLambda ? '/tmp/test-results' : './test-results',
+  reporter: [['list']],
   use: {
     headless: true,
-    ignoreHTTPSErrors: true ,
+    ignoreHTTPSErrors: true,
     launchOptions: {
       executablePath: getExecutablePath(),
       args: [
@@ -60,7 +71,7 @@ module.exports = defineConfig({
         '--no-first-run',
         '--password-store=basic',
         '--use-mock-keychain',
-        ...(process.env.AWS_LAMBDA_FUNCTION_NAME ? [
+        ...(isLambda ? [
           '--disable-background-networking',
           '--disable-background-mode',
           '--disable-device-discovery-notifications',
